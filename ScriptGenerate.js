@@ -6,11 +6,11 @@ function createElementFromHTML(htmlString) {
 
 function makeBuffer(list) {
   var stre = "<svg height='800' width='800'>";
-  for(var i = 0; i < list.length; i += 6) {
+  for(var i = 0; i < list.length; i += 9) {
     stre += "<polygon points = '";
     stre += list[i].toString() + ',' + list[i + 1].toString() + " ";
-    stre += list[i + 2].toString() + ',' + list[i + 3].toString() + " ";
-    stre += list[i + 4].toString() + ',' + list[i + 5].toString() + "' ";
+    stre += list[i + 3].toString() + ',' + list[i + 4].toString() + " ";
+    stre += list[i + 6].toString() + ',' + list[i + 7].toString() + "' ";
     stre += 'style="fill:lime;stroke:purple;stroke-width:1" />'
   }
   return createElementFromHTML(stre + '</svg>');
