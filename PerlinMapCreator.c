@@ -18,6 +18,10 @@ Tribuffer pc_getTriangleMesh(PerlinMapCreator self) {
   return triBuffer;
 }
 
+void perlinElevation(Tribuffer self) {
+
+}
+
 Tribuffer tri_GetPolygonGrid(PerlinMapCreator self) {
   Tribuffer triBuffer = malloc(sizeof(struct Tribuffer_t));
   triBuffer->offset = self->dimension;
