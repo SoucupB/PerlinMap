@@ -12,8 +12,10 @@ struct PerlinMapCreator_t {
 typedef struct Tribuffer_t *Tribuffer;
 struct Tribuffer_t {
   float *buffer;
+  int32_t *indexes;
   int32_t offset;
   int64_t size;
+  int64_t indexesSize;
 };
 
 PerlinMapCreator pc_Init(int32_t w, int32_t h, int8_t dimension, float triSize);

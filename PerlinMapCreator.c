@@ -1,6 +1,8 @@
 #include "PerlinMapCreator.h"
 #include <stdlib.h>
 #include <stdio.h>
+#include "SimpleHashBuffer.h"
+#include "Utils.h"
 
 PerlinMapCreator pc_Init(int32_t w, int32_t h, int8_t dimension, float triSize) {
   PerlinMapCreator self = malloc(sizeof(struct PerlinMapCreator_t));
@@ -18,8 +20,41 @@ Tribuffer pc_getTriangleMesh(PerlinMapCreator self) {
   return triBuffer;
 }
 
-void perlinElevation(Tribuffer self) {
+void dataTransformation(Tribuffer self) {
+  Hash hash = hs_Init();
+  int32_t edges = 1;
+  Vector triBuffer = vec_Init(sizeof(float));
+  Vector indexes = vec_Init(sizeof(int32_t));
+  for(int32_t i = 0; i < self->size; i += 3) {
+    int32_t response = hs_GetFloatHashValue(hash, (float[]){self->buffer[i], self->buffer[i + 1]}, 2);
+    if(!response) {
+      vec_Push(triBuffer, &self->buffer[i]);
+      vec_Push(triBuffer, &self->buffer[i + 1]);
+      vec_Push(triBuffer, &self->buffer[i + 2]);
+      int32_t index = edges;
+      vec_Push(indexes, &index);
+      hs_AddToFloatValue(hash, (float[]){self->buffer[i], self->buffer[i + 1]}, 2, edges);
+      edges++;
+    }
+    else {
+      vec_Push(indexes, &response);
+    }
+  }
+  free(self->buffer);
+  self->size = triBuffer->size;
+  self->buffer = triBuffer->buffer;
+  int32_t *bfInt = indexes->buffer;
+  self->indexesSize = indexes->size;
+  self->indexes = bfInt;
+}
 
+
+
+void perlinTransform(Tribuffer self) {
+  float lastNumber = func_Uniform(0.0f, 100.0f);
+  for(int32_t i = 0; i < self->size; i += 3) {
+    self->buffer[i + 2] = lastNumber + func_Uniform(-20.0f, 20.0f);
+  }
 }
 
 Tribuffer tri_GetPolygonGrid(PerlinMapCreator self) {
@@ -65,6 +100,8 @@ Tribuffer tri_GetPolygonGrid(PerlinMapCreator self) {
       }
     }
   }
+  dataTransformation(triBuffer);
+  perlinTransform(triBuffer);
   return triBuffer;
 }
 
@@ -74,8 +111,8 @@ void tri_ExportToObj(Tribuffer buffer, const char *file) {
   for(int32_t i = 0; i < buffer->size; i += 3) {
     fprintf(fd, "v %f %f %f\n", buffer->buffer[i], buffer->buffer[i + 2], buffer->buffer[i + 1]);
   }
-  for(int32_t i = 0; i < buffer->size; i += 9) {
-    fprintf(fd, "f %d %d %d\n", index, index + 1, index + 2);
+  for(int32_t i = 0; i < buffer->indexesSize; i += 3) {
+    fprintf(fd, "f %d %d %d\n", buffer->indexes[i], buffer->indexes[i + 1], buffer->indexes[i + 2]);
     index += 3;
   }
   fclose(fd);

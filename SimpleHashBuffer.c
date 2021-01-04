@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <string.h>
 
-//Hashmap with exclusively heap allocated values
 const int64_t maxKey = 1<<14;
 const int32_t keysNumber = 1<<6;
 
@@ -12,6 +11,7 @@ KeyPairValue kp_Init(int64_t size) {
   self->keys = malloc(sizeof(int64_t) * size);
   memset(self->keys, 0, sizeof(int64_t) * size);
   self->hashSize = malloc(sizeof(void *) * size);
+  memset(self->hashSize, 0, sizeof(void *) * size);
   return self;
 }
 
@@ -40,7 +40,31 @@ void hs_Delete(Hash self) {
   free(self);
 }
 
-void addValueToKey(Hash self, int64_t key, void *value) {
+void hs_AddToFloatVector(Hash self, float *buffer, int64_t size, Vector vec) {
+  hs_Set(self, buffer, sizeof(float) * size, &vec, sizeof(Vector));
+}
+
+void hs_AddToFloatValue(Hash self, float *buffer, int64_t size, int32_t value) {
+  hs_Set(self, buffer, sizeof(float) * size, &value, sizeof(int32_t));
+}
+
+Vector hs_GetFloatHashVector(Hash self, float *buffer, int64_t size) {
+  void *response = hs_Get(self, buffer, sizeof(float) * size);
+  if(!response) {
+    return NULL;
+  }
+  return *((Vector *)response);
+}
+
+int32_t hs_GetFloatHashValue(Hash self, float *buffer, int64_t size) {
+  void *response = hs_Get(self, buffer, sizeof(float) * size);
+  if(!response) {
+    return 0;
+  }
+  return *((int32_t *)response);
+}
+
+void addValueToKey(Hash self, int64_t key, void *value, int64_t valueSize) {
   KeyPairValue hsk = self->hash;
   if(self->maxKey <= self->size) {
     printf("Hashmap has reaced its limit\n");
@@ -51,12 +75,26 @@ void addValueToKey(Hash self, int64_t key, void *value) {
     key++;
   }
   hsk->keys[key % self->maxKey] = key;
-  hsk->hashSize[key % self->maxKey] = value;
+  if(hsk->hashSize[key % self->maxKey]) {
+    free(hsk->hashSize[key % self->maxKey]);
+  }
+  hsk->hashSize[key % self->maxKey] = malloc(valueSize);
+  memcpy(hsk->hashSize[key % self->maxKey], value, valueSize);
   self->size++;
 }
 
+Vector hs_GetValues(Hash self) {
+  Vector values = vec_Init(sizeof(void **));
+  for(int32_t i = 0; i < self->maxKey; i++) {
+    if(self->hash->hashSize[i]) {
+      vec_Push(values, &self->hash->hashSize[i]);
+    }
+  }
+  return values;
+}
+
 int64_t getKey(Hash self, void *key, int64_t keySize) {
-  const unsigned char *buffer = key;
+  unsigned char *buffer = key;
   int64_t keyValue = 0;
   for(int32_t i = 0; i < keySize; i++) {
     keyValue ^= self->hashKeys[i] * (int64_t)buffer[i];
@@ -64,9 +102,9 @@ int64_t getKey(Hash self, void *key, int64_t keySize) {
   return keyValue;
 }
 
-void hs_Set(Hash self, void *key, int64_t keySize, void *value) {
+void hs_Set(Hash self, void *key, int64_t keySize, void *value, int64_t valueSize) {
   int64_t keyValue = getKey(self, key, keySize);
-  addValueToKey(self, keyValue, value);
+  addValueToKey(self, keyValue, value, valueSize);
 }
 
 void *hs_Get(Hash self, void *key, int64_t keySize) {
@@ -81,27 +119,25 @@ void *hs_Get(Hash self, void *key, int64_t keySize) {
   return NULL;
 }
 
-void *push(void *buffer, void *value, int64_t valueSize) {
-  if(!buffer) {
-    buffer = malloc(valueSize * EXPAND + sizeof(int32_t) * 2);
-    *((int32_t *)buffer) = 1;
-    *((int32_t *)buffer + 1) = 0;
-    buffer += 8;
-  }
-  if(*((int32_t *)buffer - 2) <= *((int32_t *)buffer - 1)) {
-    *((int32_t *)buffer - 2) *= EXPAND;
-    buffer = realloc(buffer - 8, *((int32_t *)buffer - 2) * valueSize + sizeof(int32_t) * 2);
-    buffer += 8;
-  }
-  memcpy(buffer + *((int32_t *)buffer - 1) * valueSize, value, valueSize);
-  (*((int32_t *)buffer - 1))++;
-  return buffer;
+Vector vec_Init(int32_t type) {
+  Vector self = malloc(sizeof(struct Vector_t));
+  self->buffer = malloc(type);
+  self->capacity = 1;
+  self->size = 0;
+  self->elemSize = type;
+  return self;
 }
 
-int32_t vecSize(void *buffer) {
-  return *((int32_t *)buffer - 1);
+void vec_Push(Vector self, void *element) {
+  if(self->size >= self->capacity) {
+    self->buffer = realloc(self->buffer, self->capacity * EXPAND * self->elemSize);
+    self->capacity *= EXPAND;
+  }
+  memcpy(self->buffer + self->size * self->elemSize, element, self->elemSize);
+  self->size++;
 }
 
-void vecDelete(void *buffer) {
-  free(buffer - 8);
+void vec_Delete(Vector self) {
+  free(self->buffer);
+  free(self);
 }
