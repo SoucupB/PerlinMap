@@ -6,12 +6,12 @@ just run the command:
 
 Linux:
 
-    gcc main.c PerlinMapCreator.c Utils.c SimpleHashBuffer.c -Wall -o program -O9
-  
+    gcc perlin/main.c perlin/PerlinMapCreator.c perlin/Utils.c perlin/SimpleHashBuffer.c -Wall -o program -O9
+
 Windows:
-  
+
     buildC.bat
-    
+
 After the build is done, just run the 'program' executable and in 'grid.obj' map will be created.
-  
- 
+
+
