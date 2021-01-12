@@ -16,7 +16,6 @@ KeyPairValue kp_Init(int64_t size) {
 }
 
 Hash hs_Init() {
-  srand(seed);
   Hash self = malloc(sizeof(struct Hash_t));
   self->hash = kp_Init(maxKey);
   self->hashKeys = malloc(sizeof(int64_t) * keysNumber);

@@ -1,1 +1,1 @@
-gcc main.c PerlinMapCreator.c Utils.c SimpleHashBuffer.c -Wall -o program -O9
+gcc perlin/main.c perlin/PerlinMapCreator.c perlin/Utils.c perlin/SimpleHashBuffer.c -Wall -o program -O9

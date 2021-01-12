@@ -4,7 +4,6 @@
 typedef struct Hash_t *Hash;
 typedef struct KeyPairValue_t *KeyPairValue;
 typedef struct Vector_t *Vector;
-#define seed 84352662
 #define EXPAND 4
 
 struct Hash_t {

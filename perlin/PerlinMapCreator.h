@@ -23,6 +23,7 @@ struct Tribuffer_t {
 PerlinMapCreator pc_Init(int32_t w, int32_t h, int8_t dimension, float triSize);
 void pc_SetRigidity(PerlinMapCreator self, float rigidity);
 void pc_SetPlainHeight(PerlinMapCreator self, float plainHeight);
+void pc_Delete(PerlinMapCreator self);
 Tribuffer tri_GetPolygonGrid(PerlinMapCreator self);
 void tri_Delete(Tribuffer self);
 void tri_ExportToObj(Tribuffer buffer, const char *file);

@@ -18,6 +18,10 @@ PerlinMapCreator pc_Init(int32_t w, int32_t h, int8_t dimension, float triSize) 
   return self;
 }
 
+void pc_Delete(PerlinMapCreator self) {
+  free(self);
+}
+
 void pc_SetRigidity(PerlinMapCreator self, float rigidity) {
   self->rigidity = rigidity;
 }
