@@ -13,7 +13,17 @@ PerlinMapCreator pc_Init(int32_t w, int32_t h, int8_t dimension, float triSize) 
   self->h = h;
   self->dimension = dimension;
   self->triSize = triSize;
+  self->rigidity = 0.05f;
+  self->plainHeight = 9.0f;
   return self;
+}
+
+void pc_SetRigidity(PerlinMapCreator self, float rigidity) {
+  self->rigidity = rigidity;
+}
+
+void pc_SetPlainHeight(PerlinMapCreator self, float plainHeight) {
+  self->plainHeight = plainHeight;
 }
 
 Tribuffer pc_getTriangleMesh(PerlinMapCreator self) {
@@ -109,8 +119,8 @@ float getBillinearInterp(float x, float y, Vector interpMatrix) {
   return l * (p1 + getDiscreteValueFromMap(sex, sey, interpMatrix)) + (1.0f - l) * (getDiscreteValueFromMap(svx, svy, interpMatrix) + p2);
 }
 
-float polyInterpolation(float x, float y, Vector interpNumbers) {
-  return getBillinearInterp(x * 0.06f, y * 0.06f, interpNumbers);
+float polyInterpolation(PerlinMapCreator perlin, float x, float y, Vector interpNumbers) {
+  return getBillinearInterp(x * perlin->rigidity, y * perlin->rigidity, interpNumbers);
 }
 
 Vector getRandomNumbers(float minim, float maxim, int32_t numberOfPoints) {
@@ -141,7 +151,7 @@ void linearInterpolation(Tribuffer self, PerlinMapCreator perlin, int32_t point)
   for(int32_t i = 0; i < self->size; i += 3) {
     float x = self->buffer[i] - perlin->w / 2.0;
     float y = self->buffer[i + 1] - perlin->h / 2.0;
-    self->buffer[i + 2] = polyInterpolation(x + perlin->w / 2.0, y + perlin->h / 2.0, interpMatrix) * 9.0f;
+    self->buffer[i + 2] = polyInterpolation(perlin, x + perlin->w / 2.0, y + perlin->h / 2.0, interpMatrix) * perlin->plainHeight;
   }
   vec_Delete(interpMatrix);
 }
