@@ -3,7 +3,10 @@
 #include <stdio.h>
 #include "SimpleHashBuffer.h"
 #include "Utils.h"
+#include <string.h>
+#include <math.h>
 
+Vector getNeighbors(Tribuffer self);
 PerlinMapCreator pc_Init(int32_t w, int32_t h, int8_t dimension, float triSize) {
   PerlinMapCreator self = malloc(sizeof(struct PerlinMapCreator_t));
   self->w = w;
@@ -41,6 +44,7 @@ void dataTransformation(Tribuffer self) {
     }
   }
   free(self->buffer);
+  hs_Delete(hash);
   self->size = triBuffer->size;
   self->buffer = triBuffer->buffer;
   int32_t *bfInt = indexes->buffer;
@@ -48,14 +52,100 @@ void dataTransformation(Tribuffer self) {
   self->indexes = bfInt;
 }
 
+int8_t isElementPresent(Vector buffer, int32_t element) {
+  for(int32_t i = 0; i < buffer->size; i++) {
+    if(element == ((int32_t *)buffer->buffer)[i]) {
+      return 1;
+    }
+  }
+  return 0;
+}
 
-
-void perlinTransform(Tribuffer self) {
-  float lastNumber = func_Uniform(0.0f, 100.0f);
-  for(int32_t i = 0; i < self->size; i += 3) {
-    self->buffer[i + 2] = lastNumber + func_Uniform(-20.0f, 20.0f);
+void addElementToBuffer(Vector line, int32_t element) {
+  if(!isElementPresent(line, element)) {
+    vec_Push(line, &element);
   }
 }
+
+Vector getNeighbors(Tribuffer self) {
+  Vector graphMap = vec_Init(sizeof(Vector));
+  for(int32_t i = 0; i < self->size / 3; i++) {
+    Vector cVector = vec_Init(sizeof(int32_t));
+    vec_Push(graphMap, &cVector);
+  }
+  for(int32_t i = 0; i < self->indexesSize; i += 3) {
+    Vector firstPoint = ((Vector *)graphMap->buffer)[self->indexes[i] - 1];
+    addElementToBuffer(firstPoint, self->indexes[i + 1] - 1);
+    addElementToBuffer(firstPoint, self->indexes[i + 2] - 1);
+    Vector secondPoint = ((Vector *)graphMap->buffer)[self->indexes[i + 1] - 1];
+    addElementToBuffer(secondPoint, self->indexes[i] - 1);
+    addElementToBuffer(secondPoint, self->indexes[i + 2] - 1);
+    Vector thirdPoint = ((Vector *)graphMap->buffer)[self->indexes[i + 2] - 1];
+    addElementToBuffer(thirdPoint, self->indexes[i] - 1);
+    addElementToBuffer(thirdPoint, self->indexes[i + 1] - 1);
+  }
+  return graphMap;
+}
+
+float getDiscreteValueFromMap(int32_t i, int32_t j, Vector map) {
+  float *buffer = map->buffer;
+  int32_t w = (int32_t)buffer[0];
+  int32_t h = (int32_t)buffer[1];
+  return buffer[i * h + j % w + 2];
+}
+
+float getBillinearInterp(float x, float y, Vector interpMatrix) {
+  int32_t nvx = (int32_t)x;
+  int32_t nvy = (int32_t)y + 1;
+  int32_t nex = (int32_t)x + 1;
+  int32_t ney = (int32_t)y + 1;
+  int32_t svx = (int32_t)x;
+  int32_t svy = (int32_t)y;
+  int32_t sex = (int32_t)x + 1;
+  int32_t sey = (int32_t)y;
+  float p1 = (getDiscreteValueFromMap(nex, ney, interpMatrix) - getDiscreteValueFromMap(sex, sey, interpMatrix)) * (y - (float)sey);
+  float p2 = (getDiscreteValueFromMap(nvx, nvy, interpMatrix) - getDiscreteValueFromMap(svx, svy, interpMatrix)) * (y - (float)svy);
+  float l = (x - (float)svx);
+  return l * (p1 + getDiscreteValueFromMap(sex, sey, interpMatrix)) + (1.0f - l) * (getDiscreteValueFromMap(svx, svy, interpMatrix) + p2);
+}
+
+float polyInterpolation(float x, float y, Vector interpNumbers) {
+  return getBillinearInterp(x * 0.06f, y * 0.06f, interpNumbers);
+}
+
+Vector getRandomNumbers(float minim, float maxim, int32_t numberOfPoints) {
+  Vector buffer = vec_Init(sizeof(float));
+  for(int32_t i = 0; i < numberOfPoints; i++) {
+    float number = func_Uniform(minim, maxim);
+    vec_Push(buffer, &number);
+  }
+  return buffer;
+}
+
+Vector createDiscreteRandomMap(int32_t h, int32_t w, float minim, float maxim) {
+  Vector interpNumbers = vec_Init(sizeof(float));
+  float fw = (float)w;
+  float fh = (float)h;
+  vec_Push(interpNumbers, &fw);
+  vec_Push(interpNumbers, &fh);
+  for(int32_t i = 0; i < h * w; i++) {
+    float number = func_Uniform(minim, maxim);
+    vec_Push(interpNumbers, &number);
+  }
+  return interpNumbers;
+}
+
+
+void linearInterpolation(Tribuffer self, PerlinMapCreator perlin, int32_t point) {
+  Vector interpMatrix = createDiscreteRandomMap(perlin->h + 1, perlin->w + 1, -1.0f, 1.0f);
+  for(int32_t i = 0; i < self->size; i += 3) {
+    float x = self->buffer[i] - perlin->w / 2.0;
+    float y = self->buffer[i + 1] - perlin->h / 2.0;
+    self->buffer[i + 2] = polyInterpolation(x + perlin->w / 2.0, y + perlin->h / 2.0, interpMatrix) * 9.0f;
+  }
+  vec_Delete(interpMatrix);
+}
+
 
 Tribuffer tri_GetPolygonGrid(PerlinMapCreator self) {
   Tribuffer triBuffer = malloc(sizeof(struct Tribuffer_t));
@@ -101,8 +191,13 @@ Tribuffer tri_GetPolygonGrid(PerlinMapCreator self) {
     }
   }
   dataTransformation(triBuffer);
-  perlinTransform(triBuffer);
+  linearInterpolation(triBuffer, self, 2);
   return triBuffer;
+}
+
+void tri_Delete(Tribuffer buffer) {
+  free(buffer->indexes);
+  free(buffer->buffer);
 }
 
 void tri_ExportToObj(Tribuffer buffer, const char *file) {

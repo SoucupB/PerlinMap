@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
-const int64_t maxKey = 1<<14;
+const int64_t maxKey = 1<<16;
 const int32_t keysNumber = 1<<6;
 
 KeyPairValue kp_Init(int64_t size) {

@@ -5,19 +5,10 @@
 #include <stdlib.h>
 
 int main() {
-  PerlinMapCreator element = pc_Init(1200, 500, 3, 20);
+  PerlinMapCreator element = pc_Init(300, 300, 3, 2);
   Tribuffer triBuffer = tri_GetPolygonGrid(element);
   tri_ExportToObj(triBuffer, "grid.obj");
+  tri_Delete(triBuffer);
+  free(element);
   printf("DONE!");
- // Hash hash = hs_Init();
- // int32_t ana = 5;
- // hs_AddToFloatValue(hash, (float[]){2.4f, 5.5f}, 2, ana);
- // printf("%d", hs_GetFloatHashValue(hash, (float[]){2.4f, 5.5f}, 2));
-  // Vector arb = hs_GetFloatHashValue(hash, (float[]){2.4f, 5.5f}, 2);
-  // Vector allResp = hs_GetValues(hash);
-  // Vector resp = *((Vector *)allResp);
-  // printf("%p %I64d\n", arb, allResp->size);
-  // for(int32_t i = 0; i < allResp->size; i++) {
-  //   printf("AAA %p\n", ((Vector *)resp->buffer)[i]);
-  // }
 }

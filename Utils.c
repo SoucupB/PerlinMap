@@ -16,7 +16,6 @@ float *getTribufferBuffer(Tribuffer buffer) {
 }
 
 float func_Uniform(float left, float right) {
-  float augumentedNumber = (float)rand() + 1;
-  float randomNumber = sin((float)rand() * (float)rand() / augumentedNumber);
+  float randomNumber = rand() / (float)RAND_MAX;
   return left + (right - left) * fabs(randomNumber);
 }
