@@ -1,5 +1,5 @@
-# PerlinMap
-A simple wasm perlin map creator
+# Perlin Noise 3D Map Creator
+A simple C perlin noise 3D map creator (Also wasm compatible)
 ![alt text](Images/PerlinV1.png)
 To build and create a randomly generated perlin noise landscape map
 just run the command:
